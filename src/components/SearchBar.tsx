@@ -1,11 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, Loader2, Play, Square } from 'lucide-react';
+import { Search, Loader2, Play, Square, AudioWaveform } from 'lucide-react';
 import { SpotifyTrack } from '../types';
+import { motion, AnimatePresence } from 'motion/react';
 
 interface SearchBarProps {
   onSelect: (track: SpotifyTrack) => void;
   disabled?: boolean;
 }
+
+const VIBE_CHIPS = ["Late-Night Melancholy", "Psychedelic Beat Switch", "Golden-Hour Soul"];
 
 export function SearchBar({ onSelect, disabled }: SearchBarProps) {
   const [query, setQuery] = useState('');
@@ -60,7 +63,7 @@ export function SearchBar({ onSelect, disabled }: SearchBarProps) {
       } finally {
         setIsLoading(false);
       }
-    }, 150);
+    }, 300);
 
     return () => clearTimeout(timer);
   }, [query]);
@@ -69,12 +72,14 @@ export function SearchBar({ onSelect, disabled }: SearchBarProps) {
     <div className="relative w-full max-w-2xl mx-auto" ref={dropdownRef}>
       <audio ref={audioRef} onEnded={() => setPlayingUrl(null)} />
       
-      <div className="relative flex items-center">
-        <div className="absolute left-4 text-slate-400 group-focus-within:text-pink-400 transition-colors">
+      <div className="relative flex items-center z-20">
+        <div className="absolute left-4 text-zinc-500 z-10 flex items-center">
           {isLoading ? (
-            <Loader2 className="w-5 h-5 animate-spin" />
+            <Loader2 className="w-4 h-4 animate-spin text-zinc-400" />
+          ) : query.length > 0 ? (
+            <AudioWaveform className="w-4 h-4 text-zinc-400 animate-pulse" />
           ) : (
-            <Search className="w-5 h-5" />
+            <Search className="w-4 h-4" />
           )}
         </div>
         <input
@@ -82,66 +87,89 @@ export function SearchBar({ onSelect, disabled }: SearchBarProps) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           disabled={disabled}
-          placeholder="Search for a seed track..."
-          className="w-full bg-white/80 border border-pink-200 text-slate-800 rounded-2xl py-4 pl-12 pr-4 focus:outline-none focus:border-pink-400 focus:ring-4 focus:ring-pink-100 transition-all placeholder-slate-400 text-lg shadow-xl shadow-pink-100/50 backdrop-blur-sm disabled:opacity-50"
+          placeholder="Enter a seed track or vibe..."
+          className="w-full bg-transparent border-b border-slate-300 text-slate-900 py-4 pl-12 pr-6 focus:outline-none focus:border-slate-800 transition-colors placeholder:text-slate-400 text-lg disabled:opacity-50 font-sans tracking-tight"
         />
       </div>
 
-      {isOpen && (results.length > 0 || error) && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-white/95 border border-pink-100 rounded-xl overflow-hidden shadow-2xl backdrop-blur-md z-50">
-          {error ? (
-            <div className="p-4 text-red-500 text-sm text-center bg-red-50">
-              {error}
-            </div>
-          ) : (
-            results.map((track) => (
-              <button
-                key={track.id}
-                onClick={() => {
-                  audioRef.current?.pause();
-                  setPlayingUrl(null);
-                  onSelect(track);
-                  setIsOpen(false);
-                  setQuery('');
-                }}
-                className="w-full flex items-center gap-4 p-3 hover:bg-rose-50 transition-colors text-left border-b border-rose-100 last:border-0 group"
-              >
-                <div className="relative w-12 h-12 flex-shrink-0">
-                  {track.albumArt ? (
-                    <img src={track.albumArt} alt="" className="w-12 h-12 rounded object-cover shadow-sm" />
-                  ) : (
-                    <div className="w-12 h-12 bg-rose-100 rounded shadow-sm" />
-                  )}
-                  {track.previewUrl && (
-                    <div 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (playingUrl === track.previewUrl) {
-                          audioRef.current?.pause();
-                          setPlayingUrl(null);
-                        } else {
-                          if (audioRef.current) {
-                            audioRef.current.src = track.previewUrl;
-                            audioRef.current.play();
-                            setPlayingUrl(track.previewUrl);
-                          }
-                        }
-                      }}
-                      className={`absolute inset-0 flex items-center justify-center rounded bg-black/40 backdrop-blur-sm transition-opacity ${playingUrl === track.previewUrl ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
-                    >
-                       {playingUrl === track.previewUrl ? <Square className="w-5 h-5 text-white" /> : <Play className="w-5 h-5 text-white ml-0.5" />}
+      {/* Vibe Chips */}
+      <div className="flex flex-wrap justify-center gap-2 mt-4">
+        {VIBE_CHIPS.map((chip) => (
+          <button
+            key={chip}
+            onClick={() => setQuery(chip)}
+            disabled={disabled}
+            className="px-3 py-1.5 rounded bg-transparent border border-slate-200 text-[11px] font-mono tracking-wider uppercase text-slate-500 hover:text-slate-900 hover:border-slate-400 transition-colors disabled:opacity-50"
+          >
+            {chip}
+          </button>
+        ))}
+      </div>
+
+      <AnimatePresence>
+        {isOpen && (results.length > 0 || error) && (
+          <motion.div 
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 5 }}
+            className="absolute top-[4.5rem] left-0 right-0 bg-white border border-slate-200 rounded-lg overflow-hidden shadow-xl z-50 p-1"
+          >
+            {error ? (
+              <div className="p-4 text-slate-500 text-sm text-center">
+                {error}
+              </div>
+            ) : (
+              <div className="max-h-[60vh] overflow-y-auto custom-scrollbar">
+                {results.map((track) => (
+                  <button
+                    key={track.id}
+                    onClick={() => {
+                      audioRef.current?.pause();
+                      setPlayingUrl(null);
+                      onSelect(track);
+                      setIsOpen(false);
+                      setQuery('');
+                    }}
+                    className="w-full flex items-center gap-4 p-2 hover:bg-slate-50 transition-colors text-left rounded-md group"
+                  >
+                    <div className="relative w-10 h-10 flex-shrink-0">
+                      {track.albumArt ? (
+                        <img src={track.albumArt} alt="" className="w-10 h-10 rounded-md object-cover border border-slate-200" />
+                      ) : (
+                        <div className="w-10 h-10 bg-slate-100 rounded-md border border-slate-200" />
+                      )}
+                      {track.previewUrl && (
+                        <div 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (playingUrl === track.previewUrl) {
+                              audioRef.current?.pause();
+                              setPlayingUrl(null);
+                            } else {
+                              if (audioRef.current && track.previewUrl) {
+                                audioRef.current.src = track.previewUrl;
+                                audioRef.current.play();
+                                setPlayingUrl(track.previewUrl);
+                              }
+                            }
+                          }}
+                          className={`absolute inset-0 flex items-center justify-center rounded-md bg-black/60 transition-opacity ${playingUrl === track.previewUrl ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+                        >
+                           {playingUrl === track.previewUrl ? <Square className="w-4 h-4 text-zinc-200" /> : <Play className="w-4 h-4 text-zinc-200 ml-0.5" />}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-                <div className="flex-col overflow-hidden">
-                  <div className="text-slate-800 font-medium truncate">{track.title}</div>
-                  <div className="text-slate-500 text-sm truncate">{track.artist}</div>
-                </div>
-              </button>
-            ))
-          )}
-        </div>
-      )}
+                    <div className="flex flex-col min-w-0 overflow-hidden">
+                      <div className="text-slate-900 font-medium text-sm truncate">{track.title}</div>
+                      <div className="text-slate-500 text-xs truncate">{track.artist}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

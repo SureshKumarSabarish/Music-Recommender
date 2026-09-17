@@ -9,11 +9,11 @@ export interface SpotifyTrack {
 export interface SourceTrackAnalysis {
   title: string;
   artist: string;
-  identified_mood: string;
-  micro_genres: string[];
+  lyrical_meaning: string;
+  genres: string[];
+  credits: string;
+  public_opinion: string;
   bpm_and_rhythm: string;
-  key_sonic_elements: string[];
-  structural_notes?: string;
 }
 
 export interface MoodMatch {
@@ -22,6 +22,7 @@ export interface MoodMatch {
   match_rationale: string;
   spotifyId?: string;
   previewUrl?: string;
+  albumArt?: string;
 }
 
 export interface GenreMatch {
@@ -31,6 +32,7 @@ export interface GenreMatch {
   match_rationale: string;
   spotifyId?: string;
   previewUrl?: string;
+  albumArt?: string;
 }
 
 export interface ArtistUniverseMatch {
@@ -40,6 +42,7 @@ export interface ArtistUniverseMatch {
   match_rationale: string;
   spotifyId?: string;
   previewUrl?: string;
+  albumArt?: string;
 }
 
 export interface CurationData {

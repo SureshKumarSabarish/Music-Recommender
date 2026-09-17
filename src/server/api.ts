@@ -89,10 +89,10 @@ First, analyze the input track's architecture:
 - Identify structural anomalies (e.g., mid-song beat switches, tempo shifts, phase changes).
 - Deconstruct the emotional dissonance, vocal chain (e.g., dry vs. tape-saturated), reverb space, and rhythm velocity.
 
-Then, curate three distinct matching buckets. Provide EXACTLY 4 recommended tracks for each bucket (12 total recommendations):
-1. Mood & Atmosphere Matches: Songs with exact emotional resonance, dynamic pacing, and sonic grain. If the input has a beat-switch, provide matches for both halves of the track. Provide exactly 4 matches.
-2. Genre & Micro-Genre Matches: Bypass surface genres. Classify into specific micro-genres (e.g., Hypnagogic Pop, PBR&B, Ambient Trap) and match based on drum programming and synth architecture. Provide exactly 4 matches.
-3. Artist Universe Matches: Deep cuts/B-sides from the input artist, plus tracks by primary producers, frequent session musicians, or kindred-spirit contemporaries. Provide exactly 4 matches.
+Then, curate three distinct matching buckets. Provide EXACTLY 6 recommended tracks for each bucket (18 total recommendations):
+1. Mood & Atmosphere Matches: Songs with exact emotional resonance, dynamic pacing, and sonic grain. If the input has a beat-switch, provide matches for both halves of the track. Provide exactly 6 matches.
+2. Genre & Micro-Genre Matches: Bypass surface genres. Classify into specific micro-genres (e.g., Hypnagogic Pop, PBR&B, Ambient Trap) and match based on drum programming and synth architecture. Provide exactly 6 matches.
+3. Artist Universe Matches: Deep cuts/B-sides from the input artist, plus tracks by primary producers, frequent session musicians, or kindred-spirit contemporaries. Provide exactly 6 matches.
 
 Curatorial Guardrails:
 - No generic Top-40 commercial hits unless they are undeniable sonic twins. Prioritize critically acclaimed, underground, or cult-classic records.
@@ -124,34 +124,18 @@ apiRouter.get("/search", async (req, res) => {
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`Spotify API Error: ${response.status} - ${errorText}`);
-
-      if (response.status === 401 || response.status === 400) {
-        res.status(401).json({ error: "auth_failed", message: "Spotify API Keys are invalid or missing." });
-        return;
-      }
-
-      if (response.status === 429) {
-        const retryAfter = response.headers.get('Retry-After');
-        console.warn(`Spotify rate limit exceeded. Retry-After: ${retryAfter}`);
-        res.status(429).json({ error: "rate_limit", message: "Spotify rate limit active. Please wait a few minutes." });
-        return;
-      }
-
-      res.status(response.status).json({ error: "spotify_error", message: `Spotify search failed: ${response.statusText}` });
-      return;
+      throw new Error(`Spotify search failed: ${response.statusText}`);
     }
 
     const data = await response.json();
     
-    const results = data.tracks?.items?.map((item: any) => ({
+    const results = data.tracks.items.map((item: any) => ({
       id: item.id,
       title: item.name,
       artist: item.artists.map((a: any) => a.name).join(', '),
       albumArt: item.album.images[0]?.url || null,
       previewUrl: item.preview_url || null
-    })) || [];
+    }));
 
     res.json(results);
   } catch (error: any) {

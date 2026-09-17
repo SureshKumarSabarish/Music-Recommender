@@ -1,10 +1,7 @@
 import 'dotenv/config';
 
-// Use globalThis to cache the access token to survive hot-reloads during development
-const globalForSpotify = globalThis as unknown as {
-  spotifyCachedToken?: string;
-  spotifyTokenExpirationTime?: number;
-};
+let cachedToken: string | null = null;
+let tokenExpirationTime: number | null = null;
 
 export async function getSpotifyToken(): Promise<string> {
   const clientId = process.env.SPOTIFY_CLIENT_ID;
@@ -14,13 +11,9 @@ export async function getSpotifyToken(): Promise<string> {
     throw new Error('Missing SPOTIFY_CLIENT_ID or SPOTIFY_CLIENT_SECRET.');
   }
 
-  // Check if we have a valid cached token and it's not within 60 seconds of expiring
-  if (
-    globalForSpotify.spotifyCachedToken && 
-    globalForSpotify.spotifyTokenExpirationTime && 
-    Date.now() < globalForSpotify.spotifyTokenExpirationTime - 60000
-  ) {
-    return globalForSpotify.spotifyCachedToken;
+  // Check if we have a valid cached token
+  if (cachedToken && tokenExpirationTime && Date.now() < tokenExpirationTime) {
+    return cachedToken;
   }
 
   const basicAuth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
@@ -44,9 +37,9 @@ export async function getSpotifyToken(): Promise<string> {
 
   const data = await response.json();
   
-  globalForSpotify.spotifyCachedToken = data.access_token;
-  // Store the exact expiration time (expires_in is usually 3600 seconds)
-  globalForSpotify.spotifyTokenExpirationTime = Date.now() + data.expires_in * 1000;
+  cachedToken = data.access_token;
+  // Expire 5 minutes before actual expiration to be safe
+  tokenExpirationTime = Date.now() + (data.expires_in - 300) * 1000;
 
-  return globalForSpotify.spotifyCachedToken!;
+  return cachedToken!;
 }

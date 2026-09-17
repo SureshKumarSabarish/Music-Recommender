@@ -24,6 +24,12 @@ export function InteractiveBackground() {
     const handleWindowClick = (e: MouseEvent) => {
       addParticle(e.clientX, e.clientY);
     };
+    
+    const handleTouch = (e: TouchEvent) => {
+      if (e.touches.length > 0) {
+        addParticle(e.touches[0].clientX, e.touches[0].clientY);
+      }
+    };
 
     const handleKeyDown = (e: KeyboardEvent) => {
       // Don't spawn if pressing space/enter or modifier keys only to avoid noise
@@ -35,10 +41,12 @@ export function InteractiveBackground() {
     };
 
     window.addEventListener('click', handleWindowClick);
+    window.addEventListener('touchstart', handleTouch, { passive: true });
     window.addEventListener('keydown', handleKeyDown);
 
     return () => {
       window.removeEventListener('click', handleWindowClick);
+      window.removeEventListener('touchstart', handleTouch);
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, []);

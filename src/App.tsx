@@ -1,15 +1,18 @@
 import { useState, useRef } from 'react';
 import { SearchBar } from './components/SearchBar';
 import { RecommendationCard } from './components/RecommendationCard';
+import { SettingsModal } from './components/SettingsModal';
+import { getCredentials } from './lib/credentials';
 import { SpotifyTrack, CurationData } from './types';
 import { motion, AnimatePresence } from 'motion/react';
-import { Music2, Loader2, Sparkles, Disc3 } from 'lucide-react';
+import { Music2, Loader2, Sparkles, Disc3, Settings } from 'lucide-react';
 
 export default function App() {
   const [selectedTrack, setSelectedTrack] = useState<SpotifyTrack | null>(null);
   const [curationData, setCurationData] = useState<CurationData | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   
   const [playingUrl, setPlayingUrl] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -36,10 +39,22 @@ export default function App() {
     setPlayingUrl(null);
 
     try {
+      const { geminiKey, spotifyClientId, spotifyClientSecret } = getCredentials();
+
+      if (!geminiKey || !spotifyClientId || !spotifyClientSecret) {
+         setError('Please configure your Gemini and Spotify API keys in Settings.');
+         setIsSettingsOpen(true);
+         setIsAnalyzing(false);
+         return;
+      }
+
       const res = await fetch('/api/curate', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'x-gemini-key': geminiKey,
+          'x-spotify-client-id': spotifyClientId,
+          'x-spotify-client-secret': spotifyClientSecret
         },
         body: JSON.stringify({ title: track.title, artist: track.artist })
       });
@@ -107,6 +122,17 @@ export default function App() {
 
       <audio ref={audioRef} onEnded={() => setPlayingUrl(null)} />
 
+      {/* Settings Button */}
+      <div className="absolute top-6 right-6 z-40">
+        <button
+          onClick={() => setIsSettingsOpen(true)}
+          className="p-3 bg-white/80 border border-pink-200 text-pink-500 rounded-full hover:bg-pink-50 shadow-md transition-colors"
+          title="Settings"
+        >
+          <Settings className="w-5 h-5" />
+        </button>
+      </div>
+
       {/* Header / Hero */}
       <div className="pt-20 pb-12 px-6 flex flex-col items-center text-center relative z-10">
         <motion.div 
@@ -143,7 +169,7 @@ export default function App() {
           transition={{ duration: 0.5, delay: 0.3, ease: "easeOut" }}
           className="w-full relative z-30"
         >
-          <SearchBar onSelect={handleSelectTrack} disabled={isAnalyzing} />
+          <SearchBar onSelect={handleSelectTrack} disabled={isAnalyzing} openSettings={() => setIsSettingsOpen(true)} />
         </motion.div>
       </div>
 
@@ -360,6 +386,17 @@ export default function App() {
           )}
         </AnimatePresence>
       </main>
+
+      <SettingsModal 
+        isOpen={isSettingsOpen} 
+        onClose={() => setIsSettingsOpen(false)} 
+        onSave={(keys) => {
+           // We clear error so the user isn't stuck seeing it after saving.
+           if (error === 'Please configure your Gemini and Spotify API keys in Settings.') {
+              setError(null);
+           }
+        }}
+      />
     </div>
   );
 }

@@ -41,23 +41,7 @@ export function SearchBar({ onSelect, disabled }: SearchBarProps) {
       setIsLoading(true);
       setError(null);
       try {
-        const spotifyClientId = localStorage.getItem('spotify_client_id') || '';
-        const spotifyClientSecret = localStorage.getItem('spotify_client_secret') || '';
-
-        if (!spotifyClientId || !spotifyClientSecret) {
-           setError('Please configure your Spotify credentials in Settings.');
-           setIsOpen(true);
-           setResults([]);
-           setIsLoading(false);
-           return;
-        }
-
-        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`, {
-          headers: {
-            'x-spotify-client-id': spotifyClientId,
-            'x-spotify-client-secret': spotifyClientSecret
-          }
-        });
+        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
         const data = await res.json();
         
         if (res.ok) {

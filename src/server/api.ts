@@ -5,33 +5,6 @@ import 'dotenv/config';
 
 export const apiRouter = Router();
 
-async function fetchSpotifyWithRetry(url: string, token: string, maxRetries = 4) {
-  let delay = 1000;
-  for (let i = 0; i < maxRetries; i++) {
-    const response = await fetch(url, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-
-    if (response.status === 429) {
-      const retryAfter = response.headers.get('Retry-After');
-      const waitTime = retryAfter ? parseInt(retryAfter) * 1000 : delay;
-      console.warn(`Spotify rate limited (429). Waiting ${waitTime}ms...`);
-      await new Promise(resolve => setTimeout(resolve, waitTime));
-      delay *= 2;
-      continue;
-    }
-
-    if (!response.ok) {
-      throw new Error(`Spotify request failed: ${response.statusText} (${response.status})`);
-    }
-
-    return response;
-  }
-  throw new Error("Spotify search failed: Too Many Requests");
-}
-
 // Initialize Gemini
 const ai = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY,
@@ -116,10 +89,10 @@ First, analyze the input track's architecture:
 - Identify structural anomalies (e.g., mid-song beat switches, tempo shifts, phase changes).
 - Deconstruct the emotional dissonance, vocal chain (e.g., dry vs. tape-saturated), reverb space, and rhythm velocity.
 
-Then, curate three distinct matching buckets. Provide EXACTLY 6 recommended tracks for each bucket (18 total recommendations):
-1. Mood & Atmosphere Matches: Songs with exact emotional resonance, dynamic pacing, and sonic grain. If the input has a beat-switch, provide matches for both halves of the track. Provide exactly 6 matches.
-2. Genre & Micro-Genre Matches: Bypass surface genres. Classify into specific micro-genres (e.g., Hypnagogic Pop, PBR&B, Ambient Trap) and match based on drum programming and synth architecture. Provide exactly 6 matches.
-3. Artist Universe Matches: Deep cuts/B-sides from the input artist, plus tracks by primary producers, frequent session musicians, or kindred-spirit contemporaries. Provide exactly 6 matches.
+Then, curate three distinct matching buckets. Provide EXACTLY 4 recommended tracks for each bucket (12 total recommendations):
+1. Mood & Atmosphere Matches: Songs with exact emotional resonance, dynamic pacing, and sonic grain. If the input has a beat-switch, provide matches for both halves of the track. Provide exactly 4 matches.
+2. Genre & Micro-Genre Matches: Bypass surface genres. Classify into specific micro-genres (e.g., Hypnagogic Pop, PBR&B, Ambient Trap) and match based on drum programming and synth architecture. Provide exactly 4 matches.
+3. Artist Universe Matches: Deep cuts/B-sides from the input artist, plus tracks by primary producers, frequent session musicians, or kindred-spirit contemporaries. Provide exactly 4 matches.
 
 Curatorial Guardrails:
 - No generic Top-40 commercial hits unless they are undeniable sonic twins. Prioritize critically acclaimed, underground, or cult-classic records.
@@ -144,17 +117,41 @@ apiRouter.get("/search", async (req, res) => {
         return;
     }
 
-    const response = await fetchSpotifyWithRetry(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=5`, token);
+    const response = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=5`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Spotify API Error: ${response.status} - ${errorText}`);
+
+      if (response.status === 401 || response.status === 400) {
+        res.status(401).json({ error: "auth_failed", message: "Spotify API Keys are invalid or missing." });
+        return;
+      }
+
+      if (response.status === 429) {
+        const retryAfter = response.headers.get('Retry-After');
+        console.warn(`Spotify rate limit exceeded. Retry-After: ${retryAfter}`);
+        res.status(429).json({ error: "rate_limit", message: "Spotify rate limit active. Please wait a few minutes." });
+        return;
+      }
+
+      res.status(response.status).json({ error: "spotify_error", message: `Spotify search failed: ${response.statusText}` });
+      return;
+    }
 
     const data = await response.json();
     
-    const results = data.tracks.items.map((item: any) => ({
+    const results = data.tracks?.items?.map((item: any) => ({
       id: item.id,
       title: item.name,
       artist: item.artists.map((a: any) => a.name).join(', '),
       albumArt: item.album.images[0]?.url || null,
       previewUrl: item.preview_url || null
-    }));
+    })) || [];
 
     res.json(results);
   } catch (error: any) {
@@ -222,35 +219,37 @@ apiRouter.post("/curate", async (req, res) => {
 
     const hydrateTracks = async (tracks: any[]) => {
       if (!tracks) return;
-      
-      const chunk_size = 4; // Fetch 4 tracks concurrently
-      for (let i = 0; i < tracks.length; i += chunk_size) {
-        const chunk = tracks.slice(i, i + chunk_size);
-        await Promise.all(chunk.map(async (track) => {
-           const query = `track:${track.title} artist:${track.artist}`;
-           try {
-             const spotifyResponse = await fetchSpotifyWithRetry(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=1`, token);
+      for (const track of tracks) {
+         const query = `track:${track.title} artist:${track.artist}`;
+         try {
+           const spotifyResponse = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(query)}&type=track&limit=1`, {
+             headers: {
+               'Authorization': `Bearer ${token}`
+             }
+           });
+           if (spotifyResponse.ok) {
              const data = await spotifyResponse.json();
              if (data.tracks && data.tracks.items && data.tracks.items.length > 0) {
-                 track.spotifyId = data.tracks.items[0].id;
-                 if (data.tracks.items[0].preview_url) {
-                   track.previewUrl = data.tracks.items[0].preview_url;
-                 }
-                 if (data.tracks.items[0].album?.images?.length > 0) {
-                   track.albumArt = data.tracks.items[0].album.images[0].url;
-                 }
+               track.spotifyId = data.tracks.items[0].id;
+               if (data.tracks.items[0].preview_url) {
+                 track.previewUrl = data.tracks.items[0].preview_url;
+               }
+               if (data.tracks.items[0].album?.images?.length > 0) {
+                 track.albumArt = data.tracks.items[0].album.images[0].url;
+               }
              }
-           } catch(e) {
-             console.error(`Failed to hydrate ${track.title}`, e);
            }
-        }));
+         } catch(e) {
+           console.error(`Failed to hydrate ${track.title}`, e);
+         }
       }
     };
 
-    // We can run the categories sequentially, but each category is now chunked internally
-    await hydrateTracks(curationData.mood_matches);
-    await hydrateTracks(curationData.genre_matches);
-    await hydrateTracks(curationData.artist_universe_matches);
+    await Promise.all([
+      hydrateTracks(curationData.mood_matches),
+      hydrateTracks(curationData.genre_matches),
+      hydrateTracks(curationData.artist_universe_matches)
+    ]);
 
     res.json(curationData);
 

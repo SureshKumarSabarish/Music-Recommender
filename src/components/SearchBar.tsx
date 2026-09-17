@@ -10,6 +10,8 @@ interface SearchBarProps {
 
 const VIBE_CHIPS = ["Late-Night Melancholy", "Psychedelic Beat Switch", "Golden-Hour Soul"];
 
+const searchCache = new Map<string, SpotifyTrack[]>();
+
 export function SearchBar({ onSelect, disabled }: SearchBarProps) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SpotifyTrack[]>([]);
@@ -34,9 +36,18 @@ export function SearchBar({ onSelect, disabled }: SearchBarProps) {
 
   useEffect(() => {
     const timer = setTimeout(async () => {
-      if (!query.trim()) {
+      const currentQuery = query.trim();
+
+      if (currentQuery.length < 2) {
         setResults([]);
         setIsOpen(false);
+        setError(null);
+        return;
+      }
+
+      if (searchCache.has(currentQuery)) {
+        setResults(searchCache.get(currentQuery) || []);
+        setIsOpen(true);
         setError(null);
         return;
       }
@@ -44,10 +55,13 @@ export function SearchBar({ onSelect, disabled }: SearchBarProps) {
       setIsLoading(true);
       setError(null);
       try {
-        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
+        const res = await fetch(`/api/search?q=${encodeURIComponent(currentQuery)}`);
         const data = await res.json();
         
         if (res.ok) {
+          if (data.length > 0) {
+            searchCache.set(currentQuery, data);
+          }
           setResults(data);
           setIsOpen(true);
         } else {
@@ -63,7 +77,7 @@ export function SearchBar({ onSelect, disabled }: SearchBarProps) {
       } finally {
         setIsLoading(false);
       }
-    }, 300);
+    }, 500);
 
     return () => clearTimeout(timer);
   }, [query]);
@@ -107,16 +121,28 @@ export function SearchBar({ onSelect, disabled }: SearchBarProps) {
       </div>
 
       <AnimatePresence>
-        {isOpen && (results.length > 0 || error) && (
+        {isOpen && (results.length > 0 || error || query.trim().length >= 2) && (
           <motion.div 
             initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 5 }}
             className="absolute top-[4.5rem] left-0 right-0 bg-white border border-slate-200 rounded-lg overflow-hidden shadow-xl z-50 p-1"
           >
-            {error ? (
+            {error === 'auth_failed' ? (
+              <div className="p-4 text-slate-500 text-sm text-center">
+                Spotify API Keys are invalid or missing.
+              </div>
+            ) : error === 'rate_limit' ? (
+              <div className="p-4 text-slate-500 text-sm text-center">
+                Spotify rate limit active. Please wait a few minutes.
+              </div>
+            ) : error ? (
               <div className="p-4 text-slate-500 text-sm text-center">
                 {error}
+              </div>
+            ) : results.length === 0 ? (
+              <div className="p-4 text-slate-500 text-sm text-center">
+                No results right now
               </div>
             ) : (
               <div className="max-h-[60vh] overflow-y-auto custom-scrollbar">

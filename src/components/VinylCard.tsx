@@ -44,7 +44,6 @@ function ReactionParticles({ active }: { active: boolean }) {
 export function VinylCard({ title, artist, match_rationale, spotifyId, previewUrl, badge, playingUrl, onPlayToggle, index = 0, albumArt }: VinylCardProps) {
   const [liked, setLiked] = useState(false);
   const [showParticles, setShowParticles] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
   const isPlaying = playingUrl === previewUrl && !!previewUrl;
 
   const handleLike = () => {
@@ -62,17 +61,16 @@ export function VinylCard({ title, artist, match_rationale, spotifyId, previewUr
       initial={{ opacity: 0, y: 50, rotateX: 20 }}
       animate={{ opacity: 1, y: 0, rotateX: 0 }}
       transition={{ duration: 0.6, delay: index * 0.15, type: 'spring', bounce: 0.4 }}
-      className="relative w-full max-w-sm mx-auto group perspective cursor-pointer"
-      onClick={() => setIsExpanded(!isExpanded)}
+      className="relative w-full max-w-sm mx-auto group perspective"
     >
       {/* Vinyl Disc */}
-      <div className={`absolute top-4 right-4 bottom-4 w-[calc(100%-2rem)] rounded-full bg-black shadow-2xl shadow-black/80 overflow-hidden transition-all duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] z-0 flex items-center justify-center ${isExpanded ? 'translate-x-[25%] md:translate-x-[45%] rotate-[30deg]' : 'group-hover:translate-x-[25%] md:group-hover:translate-x-[45%] group-hover:rotate-[30deg]'}`}>
+      <div className="absolute top-4 right-4 bottom-4 w-[calc(100%-2rem)] rounded-full bg-black shadow-2xl shadow-black/80 overflow-hidden transition-all duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] group-hover:translate-x-[25%] md:group-hover:translate-x-[45%] group-hover:rotate-[30deg] z-0 flex items-center justify-center">
         <div className="absolute inset-2 rounded-full border border-white/10" />
         <div className="absolute inset-4 rounded-full border border-white/5" />
         <div className="absolute inset-6 rounded-full border border-white/10" />
         <div className="absolute inset-10 rounded-full border border-white/5" />
         <div className="absolute inset-14 rounded-full border border-white/10" />
-        <div className={`w-1/3 h-1/3 rounded-full relative overflow-hidden ${isExpanded ? 'animate-[spin_4s_linear_infinite_reverse]' : 'group-hover:animate-[spin_4s_linear_infinite_reverse]'}`}>
+        <div className="w-1/3 h-1/3 rounded-full relative overflow-hidden group-hover:animate-[spin_4s_linear_infinite_reverse]">
           <img src={coverUrl} alt="Album Art" className="w-full h-full object-cover opacity-80" />
         </div>
         <div className="absolute w-3 h-3 bg-[#07080F] rounded-full border border-white/20 z-10" />
@@ -92,13 +90,7 @@ export function VinylCard({ title, artist, match_rationale, spotifyId, previewUr
                   {badge}
                 </span>
              )}
-             <button 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleLike();
-                }} 
-                className="relative p-2 rounded-full bg-slate-100 hover:bg-slate-200 transition-colors border border-slate-200"
-             >
+             <button onClick={handleLike} className="relative p-2 rounded-full bg-slate-100 hover:bg-slate-200 transition-colors border border-slate-200">
                 <ReactionParticles active={showParticles} />
                 <Heart className={`w-5 h-5 transition-colors ${liked ? 'fill-red-500 text-red-500' : 'text-slate-400'}`} />
              </button>
@@ -117,13 +109,7 @@ export function VinylCard({ title, artist, match_rationale, spotifyId, previewUr
                     <span className="text-xs text-slate-500 truncate">{artist}</span>
                  </div>
                  {previewUrl && (
-                    <div 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onPlayToggle?.(previewUrl);
-                      }} 
-                      className={`absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm cursor-pointer transition-opacity ${isPlaying ? 'opacity-100' : 'opacity-0 group-hover/preview:opacity-100'}`}
-                    >
+                    <div onClick={() => onPlayToggle?.(previewUrl)} className={`absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm cursor-pointer transition-opacity ${isPlaying ? 'opacity-100' : 'opacity-0 group-hover/preview:opacity-100'}`}>
                        {isPlaying ? <Square className="w-8 h-8 text-fuchsia-400" /> : <Play className="w-8 h-8 text-fuchsia-400 ml-1" />}
                     </div>
                  )}

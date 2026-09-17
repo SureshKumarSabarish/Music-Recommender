@@ -98,7 +98,7 @@ export default function App() {
         </motion.div>
       </div>
 
-      <main className="max-w-7xl mx-auto px-6 z-10 relative">
+      <main className="max-w-5xl mx-auto px-6 z-10 relative">
         <AnimatePresence mode="wait">
           {error && (
              <motion.div 
@@ -198,15 +198,15 @@ export default function App() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: 0.1 }}
-                  className="space-y-6 max-w-7xl mx-auto"
+                  className="space-y-6 max-w-5xl mx-auto"
                 >
                   <div className="flex flex-col text-center">
                     <span className="text-[10px] tracking-widest font-mono uppercase text-slate-400 mb-1">01 / MOOD RESONANCE</span>
                     <h2 className="text-xl font-semibold text-slate-900 tracking-tight">Emotional & Atmospheric Profiles</h2>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-12 gap-x-12 pt-4">
-                    {curationData.mood_matches.slice(0, 6).map((rec, i) => (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-y-12 gap-x-12 pt-4">
+                    {curationData.mood_matches.slice(0, 4).map((rec, i) => (
                       <VinylCard
                         key={`${rec.title}-${rec.artist}`}
                         title={rec.title}
@@ -231,15 +231,15 @@ export default function App() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: 0.2 }}
-                  className="space-y-6 max-w-7xl mx-auto pt-8 border-t border-slate-100"
+                  className="space-y-6 max-w-5xl mx-auto pt-8 border-t border-slate-100"
                 >
                   <div className="flex flex-col text-center">
                     <span className="text-[10px] tracking-widest font-mono uppercase text-slate-400 mb-1">02 / SONIC TWINS</span>
                     <h2 className="text-xl font-semibold text-slate-900 tracking-tight">Micro-genres & Instrumentation</h2>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-12 gap-x-12 pt-4">
-                    {curationData.genre_matches.slice(0, 6).map((rec, i) => (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-y-12 gap-x-12 pt-4">
+                    {curationData.genre_matches.slice(0, 4).map((rec, i) => (
                       <VinylCard
                         key={`${rec.title}-${rec.artist}`}
                         title={rec.title}
@@ -264,15 +264,15 @@ export default function App() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: 0.3 }}
-                  className="space-y-6 max-w-7xl mx-auto pt-8 border-t border-slate-100"
+                  className="space-y-6 max-w-5xl mx-auto pt-8 border-t border-slate-100"
                 >
                   <div className="flex flex-col text-center">
                     <span className="text-[10px] tracking-widest font-mono uppercase text-slate-400 mb-1">03 / ARTIST UNIVERSE</span>
                     <h2 className="text-xl font-semibold text-slate-900 tracking-tight">Collaborators & Deep Cuts</h2>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-y-12 gap-x-12 pt-4">
-                    {curationData.artist_universe_matches.slice(0, 6).map((rec, i) => (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-y-12 gap-x-12 pt-4">
+                    {curationData.artist_universe_matches.slice(0, 4).map((rec, i) => (
                       <VinylCard
                         key={`${rec.title}-${rec.artist}`}
                         title={rec.title}

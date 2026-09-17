@@ -2,17 +2,16 @@ import 'dotenv/config';
 
 let cachedToken: string | null = null;
 let tokenExpirationTime: number | null = null;
+// Store the credentials used for the cache so we can invalidate if they change
+let cachedClientId: string | null = null;
 
-export async function getSpotifyToken(): Promise<string> {
-  const clientId = process.env.SPOTIFY_CLIENT_ID;
-  const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
-
+export async function getSpotifyToken(clientId: string, clientSecret: string): Promise<string> {
   if (!clientId || !clientSecret) {
-    throw new Error('Missing SPOTIFY_CLIENT_ID or SPOTIFY_CLIENT_SECRET environment variables.');
+    throw new Error('Missing SPOTIFY_CLIENT_ID or SPOTIFY_CLIENT_SECRET.');
   }
 
-  // Check if we have a valid cached token
-  if (cachedToken && tokenExpirationTime && Date.now() < tokenExpirationTime) {
+  // Check if we have a valid cached token for THESE credentials
+  if (cachedToken && tokenExpirationTime && cachedClientId === clientId && Date.now() < tokenExpirationTime) {
     return cachedToken;
   }
 
@@ -38,6 +37,7 @@ export async function getSpotifyToken(): Promise<string> {
   const data = await response.json();
   
   cachedToken = data.access_token;
+  cachedClientId = clientId;
   // Expire 5 minutes before actual expiration to be safe
   tokenExpirationTime = Date.now() + (data.expires_in - 300) * 1000;
 

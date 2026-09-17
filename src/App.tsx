@@ -125,7 +125,7 @@ export default function App() {
           transition={{ duration: 0.5, delay: 0.1, ease: "easeOut" }}
           className="text-4xl md:text-5xl font-bold tracking-tight mb-4 text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-amber-500"
         >
-          Sonic Architect
+          SonicTech
         </motion.h1>
         
         <motion.p 

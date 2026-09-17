@@ -2,18 +2,17 @@ import 'dotenv/config';
 
 let cachedToken: string | null = null;
 let tokenExpirationTime: number | null = null;
-let cachedClientId: string | null = null;
 
-export async function getSpotifyToken(headerClientId?: string, headerClientSecret?: string): Promise<string> {
-  const clientId = headerClientId || process.env.SPOTIFY_CLIENT_ID;
-  const clientSecret = headerClientSecret || process.env.SPOTIFY_CLIENT_SECRET;
+export async function getSpotifyToken(): Promise<string> {
+  const clientId = process.env.SPOTIFY_CLIENT_ID;
+  const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
 
   if (!clientId || !clientSecret) {
-    throw new Error('Missing SPOTIFY_CLIENT_ID or SPOTIFY_CLIENT_SECRET.');
+    throw new Error('Missing SPOTIFY_CLIENT_ID or SPOTIFY_CLIENT_SECRET environment variables.');
   }
 
-  // Check if we have a valid cached token for THESE credentials
-  if (cachedToken && tokenExpirationTime && cachedClientId === clientId && Date.now() < tokenExpirationTime) {
+  // Check if we have a valid cached token
+  if (cachedToken && tokenExpirationTime && Date.now() < tokenExpirationTime) {
     return cachedToken;
   }
 
@@ -39,7 +38,6 @@ export async function getSpotifyToken(headerClientId?: string, headerClientSecre
   const data = await response.json();
   
   cachedToken = data.access_token;
-  cachedClientId = clientId;
   // Expire 5 minutes before actual expiration to be safe
   tokenExpirationTime = Date.now() + (data.expires_in - 300) * 1000;
 

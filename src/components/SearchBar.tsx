@@ -1,15 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { Search, Loader2, Play, Square } from 'lucide-react';
 import { SpotifyTrack } from '../types';
-import { getCredentials } from '../lib/credentials';
 
 interface SearchBarProps {
   onSelect: (track: SpotifyTrack) => void;
   disabled?: boolean;
-  openSettings: () => void;
 }
 
-export function SearchBar({ onSelect, disabled, openSettings }: SearchBarProps) {
+export function SearchBar({ onSelect, disabled }: SearchBarProps) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<SpotifyTrack[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -43,23 +41,7 @@ export function SearchBar({ onSelect, disabled, openSettings }: SearchBarProps) 
       setIsLoading(true);
       setError(null);
       try {
-        const { spotifyClientId, spotifyClientSecret } = getCredentials();
-
-        if (!spotifyClientId || !spotifyClientSecret) {
-           setError('Please configure your Spotify credentials in Settings.');
-           setIsOpen(true);
-           setResults([]);
-           setIsLoading(false);
-           openSettings();
-           return;
-        }
-
-        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`, {
-          headers: {
-            'x-spotify-client-id': spotifyClientId,
-            'x-spotify-client-secret': spotifyClientSecret
-          }
-        });
+        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`);
         const data = await res.json();
         
         if (res.ok) {

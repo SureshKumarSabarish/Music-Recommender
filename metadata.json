@@ -1,0 +1,6 @@
+{
+  "name": "Sonic Architect",
+  "description": "AI-powered music curation based on deep sonic reasoning using Gemini 3.1 Pro.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

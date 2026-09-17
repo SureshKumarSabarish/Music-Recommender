@@ -102,8 +102,6 @@ Curatorial Guardrails:
 apiRouter.get("/search", async (req, res) => {
   try {
     const query = req.query.q as string;
-    const spotifyClientId = (req.headers['x-spotify-client-id'] as string) || process.env.SPOTIFY_CLIENT_ID;
-    const spotifyClientSecret = (req.headers['x-spotify-client-secret'] as string) || process.env.SPOTIFY_CLIENT_SECRET;
 
     if (!query) {
        res.status(400).json({ error: "Missing query parameter 'q'" });
@@ -112,7 +110,7 @@ apiRouter.get("/search", async (req, res) => {
 
     let token: string;
     try {
-        token = await getSpotifyToken(spotifyClientId, spotifyClientSecret);
+        token = await getSpotifyToken();
     } catch (e: any) {
         console.warn("Spotify Token Warning: Missing credentials.", e.message);
         res.status(401).json({ error: "Failed to authenticate with Spotify. Please configure your API keys." });
@@ -149,29 +147,11 @@ apiRouter.get("/search", async (req, res) => {
 apiRouter.post("/curate", async (req, res) => {
   try {
     const { title, artist } = req.body;
-    const geminiKey = (req.headers['x-gemini-key'] as string) || process.env.GEMINI_API_KEY;
-    const spotifyClientId = (req.headers['x-spotify-client-id'] as string) || process.env.SPOTIFY_CLIENT_ID;
-    const spotifyClientSecret = (req.headers['x-spotify-client-secret'] as string) || process.env.SPOTIFY_CLIENT_SECRET;
 
     if (!title || !artist) {
        res.status(400).json({ error: "Missing title or artist" });
        return;
     }
-
-    if (!geminiKey) {
-       res.status(401).json({ error: "Missing Gemini API key. Please configure your API keys." });
-       return;
-    }
-
-    // Initialize Gemini per-request
-    const ai = new GoogleGenAI({
-      apiKey: geminiKey,
-      httpOptions: {
-        headers: {
-          'User-Agent': 'aistudio-build',
-        }
-      }
-    });
 
     // 1. Generate JSON with Gemini
     let aiResponse;
@@ -213,7 +193,7 @@ apiRouter.post("/curate", async (req, res) => {
     // 2. Hydrate with Spotify IDs
     let token: string;
     try {
-        token = await getSpotifyToken(spotifyClientId, spotifyClientSecret);
+        token = await getSpotifyToken();
     } catch (e: any) {
         console.warn("Spotify Token Warning: Missing credentials. Skipping hydration.");
         // Return the unhydrated data if Spotify fails, so the app still works partially
